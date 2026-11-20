@@ -270,12 +270,21 @@ enum ChapterParser {
         ParsedChapter(index: 0, title: title, startOffset: 0, endOffset: totalLength)
     }
 
-    /// 防误判 2：间距过近视为正文误命中
+    /// 防误判 2：相邻两个章节行的间距 < 100 字 → 丢弃后一个（保留前一个）
+    ///
+    /// 比较对象是**相邻的两个候选行**，不是「上一个被保留的章节」。
+    /// 若改成与保留结果比较，密集候选会被稀疏化成"每 100 字一章"——
+    /// 而这一段密集候选的本来面目是正文误命中，应该整段只留第一个。
     private static func filterDenseMatches(_ matches: [(start: Int, title: String)]) -> [(start: Int, title: String)] {
         guard matches.count > 1 else { return matches }
         var kept: [(start: Int, title: String)] = [matches[0]]
-        for candidate in matches.dropFirst() {
-            if candidate.start - kept[kept.count - 1].start < minGapBetweenChapters {
+        var previousStart = matches[0].start
+
+        for index in 1..<matches.count {
+            let candidate = matches[index]
+            let gap = candidate.start - previousStart
+            previousStart = candidate.start
+            if gap < minGapBetweenChapters {
                 continue // 丢弃后一个，保留前一个
             }
             kept.append(candidate)

@@ -78,7 +78,7 @@ final class BookImporter {
     func importSingle(url: URL,
                       mode: ChapterMode,
                       isCancelled: () -> Bool,
-                      progress: (ImportProgress) -> Void) throws -> ImportedBook {
+                      progress: @escaping (ImportProgress) -> Void) throws -> ImportedBook {
 
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }

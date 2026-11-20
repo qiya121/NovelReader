@@ -76,9 +76,9 @@ final class LibraryStore {
         return try Book.fetchAll(db, sql: sql, arguments: arguments)
     }
 
-    func book(id: Int64) throws -> Book? {
+    func book(bookID: Int64) throws -> Book? {
         try database.read { db in
-            try Book.fetchOne(db, key: id)
+            try Book.fetchOne(db, key: bookID)
         }
     }
 
@@ -220,7 +220,7 @@ final class LibraryStore {
 
     /// 删除书籍：DB 级联删除 chapters / bookmarks，再删沙盒文件
     func deleteBook(bookID: Int64) throws {
-        let book = try self.book(id: bookID)
+        let book = try self.book(bookID: bookID)
         try database.write { db in
             try db.execute(sql: "DELETE FROM books WHERE id = ?", arguments: [bookID])
         }

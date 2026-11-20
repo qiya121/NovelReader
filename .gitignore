@@ -32,3 +32,10 @@ tmp/
 
 # 本地工作记录
 .workbuddy/
+
+# CI 本地产物
+.spm/
+.build/
+*.xcresult
+build.log
+test.log

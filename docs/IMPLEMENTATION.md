@@ -297,6 +297,22 @@ xcodebuild test -project NovelReader.xcodeproj -scheme NovelReader \
 
 ## 6. 首次编译排错顺序
 
+### 6.1 没有 Mac 时的验证方式：GitHub Actions
+
+`.github/workflows/ios-build.yml` 已经配好。push 到 `main` 后，GitHub 的 macOS runner（自带 Xcode 16）会自动：
+
+1. 拉取 GRDB
+2. `build-for-testing`（`CODE_SIGNING_ALLOWED=NO`，不需要证书）
+3. `test-without-building`，跑全部单元测试
+4. 把 `error:` 行**逐条转成 Actions 里的注解**，直接标在文件上
+5. 上传 `build.log` / `test.log` / `TestResults.xcresult`
+
+查看：仓库 → Actions → `iOS Build & Test`。失败时不用翻全量日志，Step Summary 里已经有前 40 条编译错误。
+
+也可以在 Actions 页面点 **Run workflow** 手动触发，不必等下一次 push。
+
+### 6.2 本地有 Mac 时的排查顺序
+
 ```bash
 xcodebuild -project NovelReader.xcodeproj -scheme NovelReader \
   -destination 'platform=iOS Simulator,name=iPhone 15' build 2>&1 | grep -E "error:"
