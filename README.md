@@ -130,6 +130,7 @@ xcodebuild test -project NovelReader.xcodeproj -scheme NovelReader \
 
 - [`docs/PRD.md`](docs/PRD.md) — 原始需求（v1.0，未改动）
 - [`docs/PRD-changes-v1.1.md`](docs/PRD-changes-v1.1.md) — 增量修订补丁
+- [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) — 实现说明：每条需求落在哪个文件、怎么验证、还差什么
 
 ## License
 
