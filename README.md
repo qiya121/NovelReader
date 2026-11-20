@@ -106,7 +106,7 @@ NovelReader/
 
 ## 已知限制
 
-1. **首次编译可能报错**。本仓库的代码是在 Windows 上产出的，没有经过 Xcode 编译验证。逻辑与结构是按 PRD 逐条实现的，但 Swift 的类型细节、个别 API 签名仍可能需要在 Mac 上修一轮。建议按「Core → Features」的顺序看编译错误，核心引擎（`Core/`）先跑通，UI 层的错误通常是连锁反应。
+1. **编译与单元测试已在 CI 验证通过**。GitHub Actions（`macos-15` + Xcode 16）上 `build-for-testing` 与 `test-without-building` 均通过，见 Actions 页 `iOS Build & Test`。但 CI 只能证明"能编译、逻辑测试通过"，**证明不了翻页手感、手势冲突、性能**——这些仍需真机逐项手测。
 2. **连续模式的行高是估算 + 修正**。行高按需测量，未测量的行用 `estimatedRowHeight` 估算；滚动位置以 `(章节, 偏移)` 为锚而非 `contentOffset`，所以修正行高时位置不会丢，但滚动条长度会跳动。
 3. **自定义字体只预留了机制**。V1 只有系统字体；放字体文件到 `Resources/Fonts/` 后需要改用显式 `Info.plist` 并注册 `UIAppFonts`（当前工程用 `GENERATE_INFOPLIST_FILE = YES`）。
 4. **未做 UI 测试**。PRD §9 要求的端到端 UI 测试（导入 → 翻页 → 改设置 → 加书签 → 重进）需要真机/模拟器录制，这一步留给在 Mac 上进行。

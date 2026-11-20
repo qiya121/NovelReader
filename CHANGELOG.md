@@ -4,11 +4,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- GitHub Actions 工作流 `iOS Build & Test`：macOS runner 上自动 `build-for-testing` + `test-without-building`，编译错误转成 Actions 注解，日志与 `xcresult` 作为产物上传
+
+### Fixed
+
+- `BookImporter.importSingle` 的 `progress` 参数缺 `@escaping`（下游是可选闭包，隐含逃逸）
+- `LibraryStore.book(id:)` 更名为 `book(bookID:)`，与其余 `bookID:` 系列接口一致
+- `ChapterParser.filterDenseMatches` 之前与"上一个保留的章节"比距离，会把密集候选稀疏化成每 100 字一章；改为与**相邻候选行**比较，符合 PRD §5.2 防误判第 2 条（整段误命中只保留第一个）
+- `ContinuousReaderView` 对非可选的 `UITextView.layoutManager` / `.textContainer` 使用 `guard let` 导致编译失败
+
 ### 待办
 
-- 在 macOS + Xcode 上完成首次编译验证
 - 补齐 PRD §9 要求的端到端 UI 测试
 - 真机验证：iPhone SE 3 与 iPhone 15 Pro Max 上的排版与控件布局
+- 真机测性能红线：单章分页 < 80ms、冷启动 < 1.5s、连续模式内存峰值 < 250MB
 
 ## [1.0.0] - 2026-11-20
 
