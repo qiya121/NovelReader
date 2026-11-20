@@ -1,165 +1,93 @@
-name: iOS Build & Test
+name: iOS Build
 
-# 没有 Mac 也能验证：GitHub 的 macOS runner 自带 Xcode，
-# push 之后编译错误和单测结果直接出现在 Actions 页面。
-#
-# 说明：工程使用 objectVersion = 77（Xcode 16 的文件系统同步组），
-# 因此 runner 需要 Xcode 16+；"Select Xcode" 步骤会自动挑最新的一份。
+# 用途：在没有 Mac 的机器上验证「这个工程到底能不能编译」。
+# GitHub 的 macOS runner 预装 Xcode + iOS SDK + 模拟器，等同于一台云端 Mac。
+# 触发：push 到任意分支，或在 Actions 页面手动 Run workflow。
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
-concurrency:
-  group: ios-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  build-and-test:
-    name: Build & Unit Tests
+  build:
+    # macos-15 自带 Xcode 16，满足本工程 objectVersion = 77 的最低要求。
+    # 想用更新的 Xcode 可换 macos-26，具体以 runner 镜像文档为准。
     runs-on: macos-15
-    timeout-minutes: 40
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: 环境自检
         run: |
-          if ls -d /Applications/Xcode*.app >/dev/null 2>&1; then
-            NEWEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
-            echo "使用 $NEWEST"
-            sudo xcode-select -s "$NEWEST"
-          fi
           xcodebuild -version
-          swift --version
+          xcode-select -p
+          xcrun simctl list runtimes | grep -i ios || true
 
-      - name: Pick a simulator
-        id: sim
+      - name: 解析 SPM 依赖（GRDB）
         run: |
-          set -euo pipefail
-          UDID=$(xcrun simctl list devices available \
-            | grep -i "iphone" \
-            | grep -oE "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}" \
-            | head -1)
-          if [ -z "$UDID" ]; then
-            echo "::error::没有可用的 iPhone 模拟器"
-            xcrun simctl list devices available | head -40
-            exit 1
-          fi
-          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-          echo "选用模拟器：$UDID"
-          xcrun simctl list devices available | grep -i iphone | head -5
-
-      - name: Resolve SPM dependencies
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project NovelReader.xcodeproj \
+          xcodebuild -project NovelReader.xcodeproj \
             -scheme NovelReader \
-            -clonedSourcePackagesDirPath .spm
+            -resolvePackageDependencies
 
-      - name: Build for testing
-        id: build
-        continue-on-error: true
+      - name: 编译 App
+        # 全量日志写入 build.log，同时只把 error: 行回显到页面上，方便直接读。
         run: |
           set -o pipefail
-          xcodebuild build-for-testing \
-            -project NovelReader.xcodeproj \
+          xcodebuild -project NovelReader.xcodeproj \
             -scheme NovelReader \
-            -destination "id=${{ steps.sim.outputs.udid }}" \
-            -derivedDataPath .build \
-            -clonedSourcePackagesDirPath .spm \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee build.log
+            build > build.log 2>&1
+          status=$?
+          grep -n "error:" build.log | head -80 || true
+          tail -5 build.log || true
+          exit $status
 
-      - name: Run unit tests
+      - name: 跑单元测试
         id: test
-        if: steps.build.outcome == 'success'
-        continue-on-error: true
+        # 单测要落在具体模拟器上，先列出本机有的设备名再挑一个。
+        # 若设备名对不上（Xcode 版本不同），把下面 NAME 改成上一步列出的任意 iPhone。
+        # 日志同样落文件：只 tail 最后几行的话，失败用例会滚出视野。
         run: |
           set -o pipefail
-          xcodebuild test-without-building \
-            -project NovelReader.xcodeproj \
+          NAME=$(xcrun simctl list devices available | grep -oE 'iPhone [0-9]+( Pro)?' | head -1)
+          echo "使用模拟器: $NAME"
+          xcodebuild -project NovelReader.xcodeproj \
             -scheme NovelReader \
-            -destination "id=${{ steps.sim.outputs.udid }}" \
-            -derivedDataPath .build \
-            -clonedSourcePackagesDirPath .spm \
+            -destination "platform=iOS Simulator,name=$NAME" \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
-            -resultBundlePath TestResults.xcresult \
-            2>&1 | tee test.log
+            test > test.log 2>&1
+          status=$?
+          grep -E "Executed [0-9]+ test" test.log | tail -3 || true
+          grep -nE "error: -\[|XCTAssert.* failed|with [1-9][0-9]* failure" test.log | head -40 || true
+          tail -5 test.log || true
+          exit $status
+        continue-on-error: true
 
-      - name: Annotate compile errors
-        if: always()
+      - name: 单测失败时让任务变红
+        # continue-on-error 会把测试失败伪装成绿灯，这里补回真实结论：
+        # PRD §9 要求「单元测试通过才允许合并」。
+        if: steps.test.outcome == 'failure'
         run: |
-          if [ -f build.log ]; then
-            grep -E "error:" build.log \
-              | grep -v "BUILD FAILED" \
-              | sort -u | head -60 \
-              | while IFS= read -r line; do echo "::error::$line"; done
-          fi
+          echo "::error::单元测试未通过，见 test.log 产物与上方回显"
+          exit 1
 
-      - name: Upload logs
+      - name: 收集日志
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build-logs
+          name: build-log
           path: |
             build.log
             test.log
-            TestResults.xcresult
-          retention-days: 7
+            build/Logs/Build/*.xcactivitylog
           if-no-files-found: ignore
 
-      - name: Summary
-        if: always()
+      - name: 失败时打印错误摘要
+        if: failure()
         run: |
-          {
-            echo "## iOS 构建结果"
-            echo ""
-            echo "| 阶段 | 结果 |"
-            echo "| --- | --- |"
-            echo "| Build | ${{ steps.build.outcome }} |"
-            echo "| Test | ${{ steps.test.outcome }} |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ -f build.log ] && grep -q "error:" build.log; then
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "### 编译错误（前 40 条）" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            grep -E "error:" build.log | grep -v "BUILD FAILED" | sort -u | head -40 >> "$GITHUB_STEP_SUMMARY" || true
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          if [ -f test.log ]; then
-            RESULT=$(grep -E "^Test Suite 'All tests'|Executed [0-9]+ test" test.log | tail -1)
-            if [ -n "$RESULT" ]; then
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "### 单元测试" >> "$GITHUB_STEP_SUMMARY"
-              echo '```' >> "$GITHUB_STEP_SUMMARY"
-              grep -E "Executed [0-9]+ test" test.log | tail -3 >> "$GITHUB_STEP_SUMMARY"
-              echo '```' >> "$GITHUB_STEP_SUMMARY"
-              echo "::notice title=单元测试::$RESULT"
-            fi
-            if grep -qE "with [1-9][0-9]* failure" test.log; then
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "### 失败用例" >> "$GITHUB_STEP_SUMMARY"
-              echo '```' >> "$GITHUB_STEP_SUMMARY"
-              grep -E "error: -\[|failed" test.log | head -20 >> "$GITHUB_STEP_SUMMARY" || true
-              echo '```' >> "$GITHUB_STEP_SUMMARY"
-            fi
-          fi
-
-      - name: Fail if anything failed
-        if: always()
-        run: |
-          if [ "${{ steps.build.outcome }}" != "success" ]; then
-            echo "::error::编译失败，见上方注解与 build.log 产物"
-            exit 1
-          fi
-          if [ "${{ steps.test.outcome }}" != "success" ]; then
-            echo "::error::单元测试未通过，见 test.log 产物"
-            exit 1
-          fi
+          echo "=== 失败。请在上方步骤的日志里搜 'error:' ==="
+          grep -n "error:" build.log 2>/dev/null | head -50 || true
+          grep -n "error:" test.log 2>/dev/null | head -50 || true

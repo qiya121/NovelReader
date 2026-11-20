@@ -39,3 +39,7 @@ tmp/
 *.xcresult
 build.log
 test.log
+
+# 工作流本地产物
+build/
+test.log
