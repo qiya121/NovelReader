@@ -249,9 +249,13 @@ final class ContinuousTextCell: UITableViewCell {
     }
 
     /// 给定行内 y 坐标 → 字符下标
+    ///
+    /// `UITextView.layoutManager` / `.textContainer` 在现行 SDK 里是**非可选**类型，
+    /// 不能写 `guard let`。这里用 `UITextView(usingTextLayoutManager: false)` 构造，
+    /// 保证拿到的是 TextKit 1 的 layoutManager，不会是空。
     func characterIndex(atY y: CGFloat) -> Int {
-        guard let layoutManager = textView.layoutManager,
-              let textContainer = textView.textContainer else { return 0 }
+        let layoutManager = textView.layoutManager
+        let textContainer = textView.textContainer
         layoutManager.ensureLayout(for: textContainer)
         let point = CGPoint(x: 0, y: max(0, y))
         let glyphIndex = layoutManager.glyphIndex(for: point, in: textContainer)
@@ -260,8 +264,8 @@ final class ContinuousTextCell: UITableViewCell {
 
     /// 给定字符下标 → 行内 y 坐标
     func textOffsetY(forCharacter index: Int) -> CGFloat {
-        guard let layoutManager = textView.layoutManager,
-              let textContainer = textView.textContainer else { return 0 }
+        let layoutManager = textView.layoutManager
+        let textContainer = textView.textContainer
         layoutManager.ensureLayout(for: textContainer)
         let length = (textView.text as NSString).length
         let location = min(max(0, index), max(0, length - 1))
