@@ -86,8 +86,14 @@ jobs:
           if-no-files-found: ignore
 
       - name: 失败时打印错误摘要
+        # 注解最多 10 条，所以只挑最像根因的行
         if: failure()
         run: |
-          echo "=== 失败。请在上方步骤的日志里搜 'error:' ==="
-          grep -n "error:" build.log 2>/dev/null | head -50 || true
-          grep -n "error:" test.log 2>/dev/null | head -50 || true
+          echo "=== 失败摘要 ==="
+          for f in build.log test.log; do
+            [ -f "$f" ] || continue
+            echo "--- $f ---"
+            grep -nE "error:|Assertion Failure|XCTAssert|Testing failed|Fatal error|crash" "$f" \
+              | head -10 \
+              | while IFS= read -r line; do echo "::error::$line"; done
+          done
