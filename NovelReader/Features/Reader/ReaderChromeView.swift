@@ -159,6 +159,17 @@ final class ReaderChromeView: UIView {
         bookmarkItem.addTarget(self, action: #selector(handleToggleBookmark), for: .touchUpInside)
         settingsItem.addTarget(self, action: #selector(handleSettings), for: .touchUpInside)
         progressItem.addTarget(self, action: #selector(handleProgress), for: .touchUpInside)
+
+        // UI 测试锚点（同时改善旁白（VoiceOver）读数）
+        tocItem.accessibilityIdentifier = "reader.tool.toc"
+        bookmarkItem.accessibilityIdentifier = "reader.tool.bookmark"
+        settingsItem.accessibilityIdentifier = "reader.tool.settings"
+        progressItem.accessibilityIdentifier = "reader.tool.progress"
+
+        backButton.accessibilityIdentifier = "reader.back"
+        backButton.accessibilityLabel = "返回书架"
+        bookmarkStarButton.accessibilityIdentifier = "reader.bookmarkList"
+        bookmarkStarButton.accessibilityLabel = "书签列表"
     }
 
     // MARK: - 更新
@@ -268,6 +279,11 @@ final class ChromeItemView: UIControl {
         stack.spacing = 3
         stack.isUserInteractionEnabled = false
         stack.translatesAutoresizingMaskIntoConstraints = false
+
+        // 整块作为一个可访问元素，否则子 label 会把点击目标切碎
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+        accessibilityLabel = title
 
         if !iconView.isHidden { stack.addArrangedSubview(iconView) }
         stack.addArrangedSubview(titleLabel)

@@ -64,15 +64,31 @@ targets:
         SWIFT_VERSION: "5.9"
         GENERATE_INFOPLIST_FILE: YES
 
+  NovelReaderUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: NovelReaderUITests
+    dependencies:
+      - target: NovelReader
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.qiya121.NovelReaderUITests
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: NovelReader
+
 schemes:
   NovelReader:
     build:
       targets:
         NovelReader: all
         NovelReaderTests: [test]
+        NovelReaderUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
         - NovelReaderTests
+        - NovelReaderUITests

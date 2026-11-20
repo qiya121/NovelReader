@@ -35,5 +35,10 @@ final class AppServices {
         preferences.onBrightnessChanged = { level in
             BrightnessOverlay.shared.setLevel(level)
         }
+
+        #if DEBUG
+        // UI 测试种子（Release 下整段不编译）
+        UITestSeeder.seedIfNeeded(store: store, importer: importer)
+        #endif
     }
 }

@@ -210,6 +210,7 @@ struct ShelfView: View {
             content()
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("shelf.book")
         .contextMenu {
             Button("打开阅读") {
                 readerRequest = ReaderRequest(book: book, initialOffset: book.lastCharOffset)
@@ -301,6 +302,7 @@ struct ShelfView: View {
                     .font(.system(size: 16, weight: .medium))
             }
             .accessibilityLabel("导入 TXT")
+            .accessibilityIdentifier("shelf.import")
         }
     }
 

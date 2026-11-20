@@ -62,6 +62,8 @@ struct ReadingSettingsView: View {
                     .frame(width: 30, height: 30)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("关闭")
+            .accessibilityIdentifier("settings.close")
         }
         .padding(.horizontal, ReaderUI.panelHorizontalPadding)
         .padding(.top, 18)
@@ -143,6 +145,7 @@ struct ReadingSettingsView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(theme.name)
+        .accessibilityIdentifier("settings.background.\(theme.key)")
     }
 
     // MARK: - ④ 字体大小
@@ -172,6 +175,8 @@ struct ReadingSettingsView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("字号 \(Int(tier.pointSize))")
+                    .accessibilityIdentifier("settings.fontSize.\(tier.rawValue)")
                 }
             }
         }
@@ -232,6 +237,7 @@ struct ReadingSettingsView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("settings.lineSpacing.\(tier.rawValue)")
                 }
             }
         }
