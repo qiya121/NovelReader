@@ -1,0 +1,78 @@
+# XcodeGen 备用工程描述
+#
+# 主工程是手写的 NovelReader.xcodeproj（objectVersion = 77，文件系统同步组）。
+# 如果你的 Xcode 版本打不开它，执行：
+#   brew install xcodegen && xcodegen generate
+# 会生成一份等价工程，源码引用方式为显式文件列表。
+
+name: NovelReader
+
+options:
+  bundleIdPrefix: com.qiya121
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+packages:
+  GRDB:
+    url: https://github.com/groue/GRDB.swift.git
+    from: 7.0.0
+
+targets:
+  NovelReader:
+    type: application
+    platform: iOS
+    sources:
+      - path: NovelReader
+    dependencies:
+      - package: GRDB
+        product: GRDB
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.qiya121.NovelReader
+        PRODUCT_NAME: NovelReader
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: 本地小说
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIUserInterfaceStyle: Light
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES
+    info:
+      path: NovelReader/Info.generated.plist
+      properties:
+        CFBundleDisplayName: 本地小说
+        UIUserInterfaceStyle: Light
+
+  NovelReaderTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: NovelReaderTests
+    dependencies:
+      - target: NovelReader
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.qiya121.NovelReaderTests
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  NovelReader:
+    build:
+      targets:
+        NovelReader: all
+        NovelReaderTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - NovelReaderTests

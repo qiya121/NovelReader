@@ -1,0 +1,31 @@
+# macOS / Xcode
+.DS_Store
+xcuserdata/
+DerivedData/
+.build/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# SPM
+# 注意：Package.resolved 必须提交（PRD §2 要求锁定 GRDB 版本），故不忽略
+.swiftpm/
+Packages/
+
+# 依赖
+Pods/
+Carthage/Build/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*~
+
+# 本地临时文件
+*.log
+tmp/
